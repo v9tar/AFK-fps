@@ -1,177 +1,687 @@
 --[[
-    █▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█
-    █   ⭐ TAS - النظام المطور الخارق 2024 ⭐   █
-    █▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄█
---]]
+D88 Ultimate AFK & FPS Booster v4.0
+By: YourName
+GitHub Inspired: https://github.com/v9tar/AFK-fps
+]]
 
-local L = game:GetService("Players").LocalPlayer
-local RS = game:GetService("RunService")
-local TS = game:GetService("TweenService")
-local UIS = game:GetService("UserInputService")
-local SG = game:GetService("StarterGui")
-local DS = game:GetService("DataStoreService")
-local Save = DS:GetDataStore("TAS_Save")
-local savedSettings = {}
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
--- حفظ الحالة
-pcall(function()
-	savedSettings = Save:GetAsync(L.UserId) or {}
-end)
+-- ██████╗ ██████╗  ██████╗      ██╗███████╗ ██████╗████████╗
+-- ██╔══██╗██╔══██╗██╔═══██╗     ██║██╔════╝██╔════╝╚══██╔══╝
+-- ██████╔╝██████╔╝██║   ██║     ██║█████╗  ██║        ██║   
+-- ██╔═══╝ ██╔══██╗██║   ██║██   ██║██╔══╝  ██║        ██║   
+-- ██║     ██║  ██║╚██████╔╝╚█████╔╝███████╗╚██████╗   ██║   
+-- ╚═╝     ╚═╝  ╚═╝ ╚═════╝  ╚════╝ ╚══════╝ ╚═════╝   ╚═╝   
 
--- الحماية
-local function حماية()
-    RS.Heartbeat:Connect(function()
-        if not L.Character or script.Parent ~= L.PlayerGui then
-            game:Shutdown()
-        end
-    end)
-end
-
--- تحسين FPS
-local FPSBoostEnabled = false
-local function تحسينFPS()
-    if FPSBoostEnabled then return end
-    FPSBoostEnabled = true
-    settings().Rendering.QualityLevel = 1
-    game:GetService("Lighting").GlobalShadows = false
-    game.Workspace.Terrain.Decoration = false
-    sethiddenproperty(L, "SimulationRadius", 9999)
-    setfpscap(999)
-    SG:SetCore("SendNotification", {
-        Title = "✅ تم التفعيل",
-        Text = "تم تفعيل تسريع الإطارات",
-        Duration = 3
-    })
-end
-
--- AFK بوضعيات متعددة
-local AFKEnabled = false
-local function تفعيلAFK()
-    if AFKEnabled then return end
-    AFKEnabled = true
-    local VU = game:GetService("VirtualUser")
-    L.Idled:Connect(function()
-        VU:CaptureController()
-        VU:ClickButton2(Vector2.new())
-    end)
-    -- سلوكيات بشرية
-    coroutine.wrap(function()
-        while AFKEnabled do
-            wait(math.random(5, 15))
-            L:Move(Vector3.new(math.random(-1,1),0,math.random(-1,1)))
-        end
-    end)()
-    SG:SetCore("SendNotification", {
-        Title = "✅ وضع الابتعاد مفعل",
-        Text = "تم تفعيل نظام AFK الذكي",
-        Duration = 3
-    })
-end
-
--- واجهة المستخدم
-local GUI = Instance.new("ScreenGui")
-GUI.Name = "TAS_GUI"
-GUI.ResetOnSpawn = false
-GUI.Parent = L:WaitForChild("PlayerGui")
-
--- خلفية ضبابية
-local blur = Instance.new("BlurEffect", game.Lighting)
-blur.Size = 2
-
--- الإطار
-local Main = Instance.new("Frame")
-Main.Size = UDim2.new(0, 320, 0, 430)
-Main.Position = UDim2.new(0.5, -160, 0.5, -215)
-Main.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-Main.BackgroundTransparency = 0.15
-Main.Active = true
-Main.Draggable = true
-Main.Parent = GUI
-
--- تأثير زجاجي وتدرج
-local UICorner = Instance.new("UICorner", Main)
-UICorner.CornerRadius = UDim.new(0, 12)
-
-local UIGradient = Instance.new("UIGradient", Main)
-UIGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 120, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 0, 255))
+-- إعدادات متقدمة
+local Settings = {
+    FPS = {
+        BoostEnabled = false,
+        TargetFPS = 60,
+        UltraBoost = false
+    },
+    AFK = {
+        Enabled = false,
+        AntiKick = true,
+        RandomMovements = true,
+        SafeMode = true,
+        MoveInterval = 300 -- ثواني
+    },
+    Graphics = {
+        UltraLow = false,
+        ShadowsDisabled = false,
+        EffectsDisabled = true
+    },
+    Protection = {
+        AntiBan = true,
+        StealthMode = false,
+        ScriptProtection = true
+    }
 }
 
--- عنوان
-local Title = Instance.new("TextLabel", Main)
-Title.Size = UDim2.new(1, 0, 0, 50)
-Title.Text = "⭐ TAS - النظام الخارق ⭐"
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 20
+-- ██████╗  ██████╗ ██╗   ██╗███╗   ██╗██████╗ 
+-- ██╔══██╗██╔═══██╗██║   ██║████╗  ██║██╔══██╗
+-- ██║  ██║██║   ██║██║   ██║██╔██╗ ██║██║  ██║
+-- ██║  ██║██║   ██║██║   ██║██║╚██╗██║██║  ██║
+-- ██████╔╝╚██████╔╝╚██████╔╝██║ ╚████║██████╔╝
+-- ╚═════╝  ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═════╝ 
+
+-- إنشاء واجهة D88 المتميزة
+local GUI = Instance.new("ScreenGui")
+GUI.Name = "D88_Ultimate_UI"
+GUI.Parent = CoreGui
+GUI.ResetOnSpawn = false
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 300, 0, 400)
+MainFrame.Position = UDim2.new(0.75, 0, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.BackgroundTransparency = 0.1
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.Parent = GUI
+
+-- إطار التبويب
+local TabFrame = Instance.new("Frame")
+TabFrame.Name = "TabFrame"
+TabFrame.Size = UDim2.new(1, 0, 0, 40)
+TabFrame.Position = UDim2.new(0, 0, 0, 0)
+TabFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TabFrame.BorderSizePixel = 0
+TabFrame.Parent = MainFrame
+
+-- عنوان مخصص مع تأثير
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Text = "D88 ULTIMATE"
+Title.TextColor3 = Color3.fromRGB(255, 165, 0)
+Title.Font = Enum.Font.GothamBlack
+Title.TextSize = 18
+Title.Size = UDim2.new(0.7, 0, 1, 0)
+Title.Position = UDim2.new(0.15, 0, 0, 0)
 Title.BackgroundTransparency = 1
+Title.Parent = TabFrame
 
--- زر الإغلاق
-local CloseBtn = Instance.new("TextButton", Main)
-CloseBtn.Text = "❌ إغلاق"
-CloseBtn.Size = UDim2.new(0, 80, 0, 30)
-CloseBtn.Position = UDim2.new(1, -90, 0, 10)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-CloseBtn.TextColor3 = Color3.new(1, 1, 1)
-CloseBtn.Font = Enum.Font.Gotham
-CloseBtn.TextSize = 14
-UICorner:Clone().Parent = CloseBtn
+-- زر التبديل الذكي
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Name = "ToggleBtn"
+ToggleBtn.Size = UDim2.new(0, 40, 0, 40)
+ToggleBtn.Position = UDim2.new(0.85, 0, 0.9, 0)
+ToggleBtn.Text = "≡"
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ToggleBtn.BorderSizePixel = 0
+ToggleBtn.ZIndex = 2
+ToggleBtn.Parent = GUI
 
--- زر إعادة الفتح
-local OpenBtn = Instance.new("TextButton", GUI)
-OpenBtn.Text = "📑 القائمة"
-OpenBtn.Size = UDim2.new(0, 100, 0, 35)
-OpenBtn.Position = UDim2.new(0, 10, 1, -50)
-OpenBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
-OpenBtn.TextColor3 = Color3.new(1, 1, 1)
-OpenBtn.Font = Enum.Font.Gotham
-OpenBtn.TextSize = 14
-UICorner:Clone().Parent = OpenBtn
-OpenBtn.Visible = false
+-- إطار الأزرار
+local ButtonsFrame = Instance.new("ScrollingFrame")
+ButtonsFrame.Name = "ButtonsFrame"
+ButtonsFrame.Size = UDim2.new(1, 0, 1, -40)
+ButtonsFrame.Position = UDim2.new(0, 0, 0, 40)
+ButtonsFrame.BackgroundTransparency = 1
+ButtonsFrame.ScrollBarThickness = 3
+ButtonsFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+ButtonsFrame.CanvasSize = UDim2.new(0, 0, 0, 650)
+ButtonsFrame.Parent = MainFrame
 
-CloseBtn.MouseButton1Click:Connect(function()
-    Main.Visible = false
-    OpenBtn.Visible = true
-end)
+-- إنشاء تبويبات متعددة
+local Tabs = {
+    Main = {
+        Name = "الرئيسية",
+        Color = Color3.fromRGB(255, 100, 100)
+    },
+    AFK = {
+        Name = "وضع AFK",
+        Color = Color3.fromRGB(100, 255, 100)
+    },
+    Graphics = {
+        Name = "الجرافيكس",
+        Color = Color3.fromRGB(100, 100, 255)
+    },
+    Settings = {
+        Name = "الإعدادات",
+        Color = Color3.fromRGB(255, 255, 100)
+    }
+}
 
-OpenBtn.MouseButton1Click:Connect(function()
-    Main.Visible = true
-    OpenBtn.Visible = false
-end)
+local TabButtons = {}
+local CurrentTab = "Main"
 
--- إنشاء زر وظيفي
-local function زر(النص, الرمز, وظيفة, ترتيب)
-    local B = Instance.new("TextButton", Main)
-    B.Size = UDim2.new(0.9, 0, 0, 40)
-    B.Position = UDim2.new(0.05, 0, 0, ترتيب)
-    B.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
-    B.TextColor3 = Color3.new(1,1,1)
-    B.Font = Enum.Font.Gotham
-    B.TextSize = 16
-    B.Text = رمز .. " " .. النص
-    UICorner:Clone().Parent = B
-
-    B.MouseEnter:Connect(function()
-        TS:Create(B, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(0, 255, 255)}):Play()
+-- إنشاء أزرار التبويب
+for tabName, tabData in pairs(Tabs) do
+    local tabBtn = Instance.new("TextButton")
+    tabBtn.Name = tabName.."Tab"
+    tabBtn.Size = UDim2.new(0.24, 0, 1, 0)
+    tabBtn.Position = UDim2.new(0.24 * (table.find(Tabs, tabData)-1), 0, 0, 0)
+    tabBtn.Text = tabData.Name
+    tabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    tabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    tabBtn.Font = Enum.Font.GothamMedium
+    tabBtn.TextSize = 12
+    tabBtn.BorderSizePixel = 0
+    tabBtn.Parent = TabFrame
+    
+    tabBtn.MouseButton1Click:Connect(function()
+        CurrentTab = tabName
+        UpdateTabs()
     end)
+    
+    TabButtons[tabName] = tabBtn
+end
 
-    B.MouseButton1Click:Connect(function()
-        وظيفة()
-        savedSettings[النص] = true
-        pcall(function()
-            Save:SetAsync(L.UserId, savedSettings)
-        end)
+-- ███████╗██╗   ██╗███╗   ██╗ ██████╗
+-- ██╔════╝██║   ██║████╗  ██║██╔════╝
+-- █████╗  ██║   ██║██╔██╗ ██║██║     
+-- ██╔══╝  ██║   ██║██║╚██╗██║██║     
+-- ██║     ╚██████╔╝██║ ╚████║╚██████╗
+-- ╚═╝      ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝
+
+-- نظام التبويبات الديناميكي
+local function UpdateTabs()
+    -- مسح المحتوى القديم
+    for _, child in ipairs(ButtonsFrame:GetChildren()) do
+        if child:IsA("Frame") or child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+    
+    -- تحديث ألوان التبويبات
+    for tabName, tabBtn in pairs(TabButtons) do
+        if tabName == CurrentTab then
+            TweenService:Create(tabBtn, TweenInfo.new(0.3), {
+                BackgroundColor3 = Tabs[tabName].Color,
+                TextColor3 = Color3.fromRGB(20, 20, 20)
+            }):Play()
+        else
+            TweenService:Create(tabBtn, TweenInfo.new(0.3), {
+                BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+                TextColor3 = Color3.fromRGB(200, 200, 200)
+            }):Play()
+        end
+    end
+    
+    -- إنشاء محتوى التبويب الحالي
+    if CurrentTab == "Main" then
+        CreateMainTab()
+    elseif CurrentTab == "AFK" then
+        CreateAFKTab()
+    elseif CurrentTab == "Graphics" then
+        CreateGraphicsTab()
+    elseif CurrentTab == "Settings" then
+        CreateSettingsTab()
+    end
+end
+
+-- ██████╗ ██╗   ██╗████████╗████████╗ ██████╗ ███╗   ██╗
+-- ██╔══██╗██║   ██║╚══██╔══╝╚══██╔══╝██╔═══██╗████╗  ██║
+-- ██████╔╝██║   ██║   ██║      ██║   ██║   ██║██╔██╗ ██║
+-- ██╔══██╗██║   ██║   ██║      ██║   ██║   ██║██║╚██╗██║
+-- ██████╔╝╚██████╔╝   ██║      ██║   ╚██████╔╝██║ ╚████║
+-- ╚═════╝  ╚═════╝    ╚═╝      ╚═╝    ╚═════╝ ╚═╝  ╚═══╝
+
+-- إنشاء تبويب الرئيسية
+local function CreateMainTab()
+    -- إضافة أقسام رئيسية
+    AddSection("التحكم السريع", 10)
+    
+    -- زر تفعيل/إلغاء كل الميزات
+    AddButton("تفعيل الكل", "تفعيل جميع الميزات الممتازة", Color3.fromRGB(0, 200, 0), function()
+        Settings.FPS.BoostEnabled = true
+        Settings.AFK.Enabled = true
+        Settings.Graphics.UltraLow = true
+        Settings.Protection.AntiBan = true
+        ApplyAllSettings()
+        UpdateTabs()
+    end)
+    
+    AddButton("إلغاء الكل", "تعطيل جميع الميزات", Color3.fromRGB(200, 0, 0), function()
+        Settings.FPS.BoostEnabled = false
+        Settings.AFK.Enabled = false
+        Settings.Graphics.UltraLow = false
+        Settings.Protection.AntiBan = false
+        ApplyAllSettings()
+        UpdateTabs()
+    end)
+    
+    -- معلومات النظام
+    AddSection("معلومات النظام", 200)
+    
+    local fpsLabel = AddLabel("معدل الإطارات: "..math.floor(1/RunService.RenderStepped:Wait()))
+    local pingLabel = AddLabel("البينج: حساب...")
+    local memoryLabel = AddLabel("الذاكرة المستخدمة: حساب...")
+    
+    -- تحديث المعلومات باستمرار
+    spawn(function()
+        while wait(1) do
+            fpsLabel.Text = "معدل الإطارات: "..math.floor(1/RunService.RenderStepped:Wait())
+            -- يمكن إضافة تحديث البينج والذاكرة هنا
+        end
     end)
 end
 
--- الأزرار
-زر("🚀 توربو الإطارات", "⚡", تحسينFPS, 70)
-زر("💤 وضع الابتعاد", "🛌", تفعيلAFK, 130)
+-- إنشاء تبويب AFK
+local function CreateAFKTab()
+    AddSection("إعدادات AFK", 10)
+    
+    AddToggle("تفعيل وضع AFK", Settings.AFK.Enabled, Color3.fromRGB(100, 255, 100), function(value)
+        Settings.AFK.Enabled = value
+        ToggleAFKMode(value)
+    end)
+    
+    AddToggle("الحماية من الطرد", Settings.AFK.AntiKick, Color3.fromRGB(255, 100, 100), function(value)
+        Settings.AFK.AntiKick = value
+    end)
+    
+    AddToggle("حركات عشوائية", Settings.AFK.RandomMovements, Color3.fromRGB(100, 100, 255), function(value)
+        Settings.AFK.RandomMovements = value
+    end)
+    
+    AddSlider("فترة الحركة (ثانية)", Settings.AFK.MoveInterval, 60, 600, function(value)
+        Settings.AFK.MoveInterval = value
+    end)
+    
+    AddInfoBox("نصيحة: تفعيل الحماية من الطرد يضمن بقائك في اللعبة لفترات طويلة")
+end
 
--- تفعيل المحفوظات تلقائي
-if savedSettings["🚀 توربو الإطارات"] then تحسينFPS() end
-if savedSettings["💤 وضع الابتعاد"] then تفعيلAFK() end
+-- إنشاء تبويب الجرافيكس
+local function CreateGraphicsTab()
+    AddSection("تحسين الجرافيكس", 10)
+    
+    AddToggle("جودة منخفضة جداً", Settings.Graphics.UltraLow, Color3.fromRGB(255, 100, 100), function(value)
+        Settings.Graphics.UltraLow = value
+        ApplyGraphicsSettings()
+    end)
+    
+    AddToggle("تعطيل الظلال", Settings.Graphics.ShadowsDisabled, Color3.fromRGB(100, 100, 255), function(value)
+        Settings.Graphics.ShadowsDisabled = value
+        ApplyGraphicsSettings()
+    end)
+    
+    AddToggle("تعطيل المؤثرات", Settings.Graphics.EffectsDisabled, Color3.fromRGB(255, 255, 100), function(value)
+        Settings.Graphics.EffectsDisabled = value
+        ApplyGraphicsSettings()
+    end)
+    
+    AddSection("تحسين الأداء", 250)
+    
+    AddButton("تحسين الذاكرة", "تحرير الذاكرة المؤقتة", Color3.fromRGB(100, 200, 255), function()
+        CollectGarbage()
+    end)
+    
+    AddInfoBox("تحذير: بعض الإعدادات قد تؤثر على جودة الرؤية")
+end
 
--- تفعيل الحماية
-حماية()
+-- إنشاء تبويب الإعدادات
+local function CreateSettingsTab()
+    AddSection("إعدادات الحماية", 10)
+    
+    AddToggle("وضع التخفي", Settings.Protection.StealthMode, Color3.fromRGB(150, 150, 255), function(value)
+        Settings.Protection.StealthMode = value
+        ToggleStealthMode(value)
+    end)
+    
+    AddToggle("حماية السكربت", Settings.Protection.ScriptProtection, Color3.fromRGB(255, 150, 150), function(value)
+        Settings.Protection.ScriptProtection = value
+    end)
+    
+    AddSection("مظهر الواجهة", 180)
+    
+    AddSlider("شفافية الواجهة", MainFrame.BackgroundTransparency * 100, 10, 90, function(value)
+        MainFrame.BackgroundTransparency = value / 100
+    end)
+    
+    AddButton("إعادة تعيين الواجهة", "إعادة الواجهة إلى وضعها الافتراضي", Color3.fromRGB(200, 200, 200), function()
+        MainFrame.Position = UDim2.new(0.75, 0, 0.3, 0)
+        MainFrame.BackgroundTransparency = 0.1
+    end)
+end
+
+-- ███████╗███████╗██████╗ ██╗   ██╗██╗ ██████╗███████╗
+-- ██╔════╝██╔════╝██╔══██╗██║   ██║██║██╔════╝██╔════╝
+-- ███████╗█████╗  ██████╔╝██║   ██║██║██║     █████╗  
+-- ╚════██║██╔══╝  ██╔══██╗╚██╗ ██╔╝██║██║     ██╔══╝  
+-- ███████║███████╗██║  ██║ ╚████╔╝ ██║╚██████╗███████╗
+-- ╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚═╝ ╚═════╝╚══════╝
+
+-- وظائف مساعدة لإنشاء العناصر
+function AddSection(title, yPos)
+    local section = Instance.new("Frame")
+    section.Name = "Section_"..title
+    section.Size = UDim2.new(0.9, 0, 0, 30)
+    section.Position = UDim2.new(0.05, 0, 0, yPos)
+    section.BackgroundTransparency = 1
+    section.Parent = ButtonsFrame
+    
+    local label = Instance.new("TextLabel")
+    label.Text = title
+    label.TextColor3 = Color3.fromRGB(255, 165, 0)
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 14
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = section
+    
+    local line = Instance.new("Frame")
+    line.Size = UDim2.new(1, 0, 0, 1)
+    line.Position = UDim2.new(0, 0, 1, -1)
+    line.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    line.BorderSizePixel = 0
+    line.Parent = section
+    
+    return section
+end
+
+function AddButton(text, tooltip, color, callback)
+    local btn = Instance.new("TextButton")
+    btn.Text = text
+    btn.Size = UDim2.new(0.9, 0, 0, 40)
+    btn.Position = UDim2.new(0.05, 0, 0, ButtonsFrame.CanvasSize.Y.Offset)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    btn.TextColor3 = color
+    btn.Font = Enum.Font.GothamMedium
+    btn.TextSize = 14
+    btn.AutoButtonColor = false
+    btn.Parent = ButtonsFrame
+    
+    -- تحديث حجم Canvas
+    ButtonsFrame.CanvasSize = UDim2.new(0, 0, 0, ButtonsFrame.CanvasSize.Y.Offset + 45)
+    
+    -- تأثيرات الزر
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}):Play()
+    end)
+    
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}):Play()
+    end)
+    
+    btn.MouseButton1Click:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(70, 70, 70)}):Play()
+        TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}):Play()
+        callback()
+    end)
+    
+    return btn
+end
+
+function AddToggle(text, value, color, callback)
+    local toggle = Instance.new("Frame")
+    toggle.Size = UDim2.new(0.9, 0, 0, 30)
+    toggle.Position = UDim2.new(0.05, 0, 0, ButtonsFrame.CanvasSize.Y.Offset)
+    toggle.BackgroundTransparency = 1
+    toggle.Parent = ButtonsFrame
+    
+    local label = Instance.new("TextLabel")
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(200, 200, 200)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 14
+    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = toggle
+    
+    local toggleBtn = Instance.new("TextButton")
+    toggleBtn.Size = UDim2.new(0.2, 0, 0.7, 0)
+    toggleBtn.Position = UDim2.new(0.8, 0, 0.15, 0)
+    toggleBtn.Text = ""
+    toggleBtn.BackgroundColor3 = value and color or Color3.fromRGB(70, 70, 70)
+    toggleBtn.AutoButtonColor = false
+    toggleBtn.Parent = toggle
+    
+    local toggleStatus = Instance.new("TextLabel")
+    toggleStatus.Text = value and "ON" or "OFF"
+    toggleStatus.TextColor3 = value and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 150, 150)
+    toggleStatus.Font = Enum.Font.GothamBold
+    toggleStatus.TextSize = 12
+    toggleStatus.Size = UDim2.new(1, 0, 1, 0)
+    toggleStatus.BackgroundTransparency = 1
+    toggleStatus.Parent = toggleBtn
+    
+    -- تحديث حجم Canvas
+    ButtonsFrame.CanvasSize = UDim2.new(0, 0, 0, ButtonsFrame.CanvasSize.Y.Offset + 35)
+    
+    -- وظيفة التبديل
+    toggleBtn.MouseButton1Click:Connect(function()
+        local newValue = not value
+        callback(newValue)
+        toggleBtn.BackgroundColor3 = newValue and color or Color3.fromRGB(70, 70, 70)
+        toggleStatus.Text = newValue and "ON" or "OFF"
+        toggleStatus.TextColor3 = newValue and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 150, 150)
+        value = newValue
+    end)
+    
+    return toggle
+end
+
+function AddSlider(text, value, min, max, callback)
+    local slider = Instance.new("Frame")
+    slider.Size = UDim2.new(0.9, 0, 0, 50)
+    slider.Position = UDim2.new(0.05, 0, 0, ButtonsFrame.CanvasSize.Y.Offset)
+    slider.BackgroundTransparency = 1
+    slider.Parent = ButtonsFrame
+    
+    local label = Instance.new("TextLabel")
+    label.Text = text..": "..value
+    label.TextColor3 = Color3.fromRGB(200, 200, 200)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 14
+    label.Size = UDim2.new(1, 0, 0, 20)
+    label.BackgroundTransparency = 1
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = slider
+    
+    local track = Instance.new("Frame")
+    track.Size = UDim2.new(1, 0, 0, 5)
+    track.Position = UDim2.new(0, 0, 0, 25)
+    track.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    track.BorderSizePixel = 0
+    track.Parent = slider
+    
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new((value - min)/(max - min), 0, 1, 0)
+    fill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    fill.BorderSizePixel = 0
+    fill.Parent = track
+    
+    local thumb = Instance.new("TextButton")
+    thumb.Size = UDim2.new(0, 15, 0, 15)
+    thumb.Position = UDim2.new((value - min)/(max - min), -7, 0.5, -7)
+    thumb.Text = ""
+    thumb.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    thumb.BorderSizePixel = 0
+    thumb.AutoButtonColor = false
+    thumb.Parent = slider
+    
+    -- تحديث حجم Canvas
+    ButtonsFrame.CanvasSize = UDim2.new(0, 0, 0, ButtonsFrame.CanvasSize.Y.Offset + 55)
+    
+    -- وظيفة السحب
+    local dragging
+    thumb.MouseButton1Down:Connect(function()
+        dragging = true
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local xPos = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+            local newValue = math.floor(min + (max - min) * xPos)
+            
+            fill.Size = UDim2.new(xPos, 0, 1, 0)
+            thumb.Position = UDim2.new(xPos, -7, 0.5, -7)
+            label.Text = text..": "..newValue
+            callback(newValue)
+        end
+    end)
+    
+    return slider
+end
+
+function AddLabel(text)
+    local label = Instance.new("TextLabel")
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(200, 200, 200)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 14
+    label.Size = UDim2.new(0.9, 0, 0, 20)
+    label.Position = UDim2.new(0.05, 0, 0, ButtonsFrame.CanvasSize.Y.Offset)
+    label.BackgroundTransparency = 1
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = ButtonsFrame
+    
+    -- تحديث حجم Canvas
+    ButtonsFrame.CanvasSize = UDim2.new(0, 0, 0, ButtonsFrame.CanvasSize.Y.Offset + 25)
+    
+    return label
+end
+
+function AddInfoBox(text)
+    local info = Instance.new("TextLabel")
+    info.Text = text
+    info.TextColor3 = Color3.fromRGB(150, 150, 150)
+    info.Font = Enum.Font.Gotham
+    info.TextSize = 12
+    info.Size = UDim2.new(0.9, 0, 0, 40)
+    info.Position = UDim2.new(0.05, 0, 0, ButtonsFrame.CanvasSize.Y.Offset)
+    info.BackgroundTransparency = 1
+    info.TextWrapped = true
+    info.TextXAlignment = Enum.TextXAlignment.Left
+    info.Parent = ButtonsFrame
+    
+    -- تحديث حجم Canvas
+    ButtonsFrame.CanvasSize = UDim2.new(0, 0, 0, ButtonsFrame.CanvasSize.Y.Offset + 45)
+    
+    return info
+end
+
+-- ███████╗██╗  ██╗██████╗ ███████╗██████╗ 
+-- ██╔════╝██║  ██║██╔══██╗██╔════╝██╔══██╗
+-- ███████╗███████║██████╔╝█████╗  ██████╔╝
+-- ╚════██║██╔══██║██╔═══╝ ██╔══╝  ██╔══██╗
+-- ███████║██║  ██║██║     ███████╗██║  ██║
+-- ╚══════╝╚═╝  ╚═╝╚═╝     ╚══════╝╚═╝  ╚═╝
+
+-- تطبيق جميع الإعدادات
+function ApplyAllSettings()
+    ApplyGraphicsSettings()
+    ToggleAFKMode(Settings.AFK.Enabled)
+    ToggleStealthMode(Settings.Protection.StealthMode)
+end
+
+-- تطبيق إعدادات الجرافيكس
+function ApplyGraphicsSettings()
+    if Settings.Graphics.UltraLow then
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 50
+        settings().Rendering.QualityLevel = 1
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("Part") then
+                obj.Material = Enum.Material.Plastic
+                obj.Reflectance = 0
+            end
+        end
+    end
+    
+    if Settings.Graphics.ShadowsDisabled then
+        Lighting.GlobalShadows = false
+    end
+    
+    if Settings.Graphics.EffectsDisabled then
+        for _, effect in pairs(Lighting:GetChildren()) do
+            if effect:IsA("BlurEffect") or effect:IsA("SunRaysEffect") then
+                effect.Enabled = false
+            end
+        end
+    end
+end
+
+-- تفعيل/إلغاء وضع AFK
+function ToggleAFKMode(enabled)
+    if enabled then
+        spawn(function()
+            while Settings.AFK.Enabled do
+                wait(Settings.AFK.MoveInterval)
+                
+                -- حركة AFK الأساسية
+                if Settings.AFK.AntiKick then
+                    pcall(function()
+                        Players.LocalPlayer:RequestMoveTo(Players.LocalPlayer.Character.HumanoidRootPart.Position)
+                    end)
+                    
+                    -- حماية إضافية ضد الطرد
+                    pcall(function()
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+                    end)
+                end
+                
+                -- حركات عشوائية
+                if Settings.AFK.RandomMovements then
+                    local anims = {"wave", "point", "dance1", "dance2", "laugh"}
+                    local anim = Instance.new("Animation")
+                    anim.AnimationId = "rbxassetid://"..math.random(181893478, 181893540)
+                    Players.LocalPlayer.Character.Humanoid:LoadAnimation(anim):Play()
+                end
+            end
+        end)
+    end
+end
+
+-- تفعيل/إلغاء وضع التخفي
+function ToggleStealthMode(enabled)
+    if enabled then
+        pcall(function()
+            game:GetService("ScriptContext").ScriptsDisabled = true
+            setidentity(2) -- تخفيض صلاحيات السكربت
+        end)
+    else
+        pcall(function()
+            game:GetService("ScriptContext").ScriptsDisabled = false
+            setidentity(7) -- استعادة الصلاحيات
+        end)
+    end
+end
+
+-- ███████╗███████╗████████╗██╗   ██╗██████╗ 
+-- ██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗
+-- ███████╗█████╗     ██║   ██║   ██║██████╔╝
+-- ╚════██║██╔══╝     ██║   ██║   ██║██╔═══╝ 
+-- ███████║███████╗   ██║   ╚██████╔╝██║     
+-- ╚══════╝╚══════╝   ╚═╝    ╚═════╝ ╚═╝     
+
+-- نظام السحب للواجهة
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+-- زر التبديل الذكي
+local isUIVisible = true
+ToggleBtn.MouseButton1Click:Connect(function()
+    isUIVisible = not isUIVisible
+    TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {
+        Position = isUIVisible and UDim2.new(0.75, 0, 0.3, 0) or UDim2.new(1.2, 0, 0.3, 0)
+    }):Play()
+end)
+
+-- تأثيرات الواجهة
+spawn(function()
+    while wait(2) do
+        TweenService:Create(Title, TweenInfo.new(1), {
+            TextColor3 = Color3.fromHSV(tick()%5/
