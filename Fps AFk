@@ -1,1 +1,177 @@
+--[[
+    █▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█
+    █   ⭐ TAS - النظام المطور الخارق 2024 ⭐   █
+    █▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄█
+--]]
 
+local L = game:GetService("Players").LocalPlayer
+local RS = game:GetService("RunService")
+local TS = game:GetService("TweenService")
+local UIS = game:GetService("UserInputService")
+local SG = game:GetService("StarterGui")
+local DS = game:GetService("DataStoreService")
+local Save = DS:GetDataStore("TAS_Save")
+local savedSettings = {}
+
+-- حفظ الحالة
+pcall(function()
+	savedSettings = Save:GetAsync(L.UserId) or {}
+end)
+
+-- الحماية
+local function حماية()
+    RS.Heartbeat:Connect(function()
+        if not L.Character or script.Parent ~= L.PlayerGui then
+            game:Shutdown()
+        end
+    end)
+end
+
+-- تحسين FPS
+local FPSBoostEnabled = false
+local function تحسينFPS()
+    if FPSBoostEnabled then return end
+    FPSBoostEnabled = true
+    settings().Rendering.QualityLevel = 1
+    game:GetService("Lighting").GlobalShadows = false
+    game.Workspace.Terrain.Decoration = false
+    sethiddenproperty(L, "SimulationRadius", 9999)
+    setfpscap(999)
+    SG:SetCore("SendNotification", {
+        Title = "✅ تم التفعيل",
+        Text = "تم تفعيل تسريع الإطارات",
+        Duration = 3
+    })
+end
+
+-- AFK بوضعيات متعددة
+local AFKEnabled = false
+local function تفعيلAFK()
+    if AFKEnabled then return end
+    AFKEnabled = true
+    local VU = game:GetService("VirtualUser")
+    L.Idled:Connect(function()
+        VU:CaptureController()
+        VU:ClickButton2(Vector2.new())
+    end)
+    -- سلوكيات بشرية
+    coroutine.wrap(function()
+        while AFKEnabled do
+            wait(math.random(5, 15))
+            L:Move(Vector3.new(math.random(-1,1),0,math.random(-1,1)))
+        end
+    end)()
+    SG:SetCore("SendNotification", {
+        Title = "✅ وضع الابتعاد مفعل",
+        Text = "تم تفعيل نظام AFK الذكي",
+        Duration = 3
+    })
+end
+
+-- واجهة المستخدم
+local GUI = Instance.new("ScreenGui")
+GUI.Name = "TAS_GUI"
+GUI.ResetOnSpawn = false
+GUI.Parent = L:WaitForChild("PlayerGui")
+
+-- خلفية ضبابية
+local blur = Instance.new("BlurEffect", game.Lighting)
+blur.Size = 2
+
+-- الإطار
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 320, 0, 430)
+Main.Position = UDim2.new(0.5, -160, 0.5, -215)
+Main.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+Main.BackgroundTransparency = 0.15
+Main.Active = true
+Main.Draggable = true
+Main.Parent = GUI
+
+-- تأثير زجاجي وتدرج
+local UICorner = Instance.new("UICorner", Main)
+UICorner.CornerRadius = UDim.new(0, 12)
+
+local UIGradient = Instance.new("UIGradient", Main)
+UIGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 120, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 0, 255))
+}
+
+-- عنوان
+local Title = Instance.new("TextLabel", Main)
+Title.Size = UDim2.new(1, 0, 0, 50)
+Title.Text = "⭐ TAS - النظام الخارق ⭐"
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 20
+Title.BackgroundTransparency = 1
+
+-- زر الإغلاق
+local CloseBtn = Instance.new("TextButton", Main)
+CloseBtn.Text = "❌ إغلاق"
+CloseBtn.Size = UDim2.new(0, 80, 0, 30)
+CloseBtn.Position = UDim2.new(1, -90, 0, 10)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+CloseBtn.TextColor3 = Color3.new(1, 1, 1)
+CloseBtn.Font = Enum.Font.Gotham
+CloseBtn.TextSize = 14
+UICorner:Clone().Parent = CloseBtn
+
+-- زر إعادة الفتح
+local OpenBtn = Instance.new("TextButton", GUI)
+OpenBtn.Text = "📑 القائمة"
+OpenBtn.Size = UDim2.new(0, 100, 0, 35)
+OpenBtn.Position = UDim2.new(0, 10, 1, -50)
+OpenBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
+OpenBtn.TextColor3 = Color3.new(1, 1, 1)
+OpenBtn.Font = Enum.Font.Gotham
+OpenBtn.TextSize = 14
+UICorner:Clone().Parent = OpenBtn
+OpenBtn.Visible = false
+
+CloseBtn.MouseButton1Click:Connect(function()
+    Main.Visible = false
+    OpenBtn.Visible = true
+end)
+
+OpenBtn.MouseButton1Click:Connect(function()
+    Main.Visible = true
+    OpenBtn.Visible = false
+end)
+
+-- إنشاء زر وظيفي
+local function زر(النص, الرمز, وظيفة, ترتيب)
+    local B = Instance.new("TextButton", Main)
+    B.Size = UDim2.new(0.9, 0, 0, 40)
+    B.Position = UDim2.new(0.05, 0, 0, ترتيب)
+    B.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+    B.TextColor3 = Color3.new(1,1,1)
+    B.Font = Enum.Font.Gotham
+    B.TextSize = 16
+    B.Text = رمز .. " " .. النص
+    UICorner:Clone().Parent = B
+
+    B.MouseEnter:Connect(function()
+        TS:Create(B, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(0, 255, 255)}):Play()
+    end)
+
+    B.MouseButton1Click:Connect(function()
+        وظيفة()
+        savedSettings[النص] = true
+        pcall(function()
+            Save:SetAsync(L.UserId, savedSettings)
+        end)
+    end)
+end
+
+-- الأزرار
+زر("🚀 توربو الإطارات", "⚡", تحسينFPS, 70)
+زر("💤 وضع الابتعاد", "🛌", تفعيلAFK, 130)
+
+-- تفعيل المحفوظات تلقائي
+if savedSettings["🚀 توربو الإطارات"] then تحسينFPS() end
+if savedSettings["💤 وضع الابتعاد"] then تفعيلAFK() end
+
+-- تفعيل الحماية
+حماية()
